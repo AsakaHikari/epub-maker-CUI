@@ -38,7 +38,7 @@ public class Main {
             img = ImageIO.read(imagefiles[0]);
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        }//
         int width=img.getWidth();
         int height=img.getHeight();
         Filemaker fm=new Filemaker(title,title,author,author,publisher,width,height,type);
