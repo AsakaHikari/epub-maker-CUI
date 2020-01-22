@@ -33,6 +33,7 @@ public class Main {
         File target=new File(current,foldername);
         File[] imagefiles=target.listFiles();
         BufferedImage img = null;
+        //
         try {
             img = ImageIO.read(imagefiles[0]);
         } catch (IOException e) {
