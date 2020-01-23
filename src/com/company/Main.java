@@ -2,36 +2,50 @@ package com.company;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.zip.CRC32;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class Main {
+    static byte[] buf = new byte[1024];
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
 
-        int type=0;
+        int type = 0;
 
-        String foldername="target";
+        String foldername = "target";
 
 
+        String title = "taitoru";
+        String author = "sakusha";
+        String publisher = "shuppansha";
+        List<File> filelist = new ArrayList<File>();
+        File current = new File(".");
+        File root = new File(current, "_ROOT_");
+        root.mkdir();
+        File metainf = new File(root, "META-INF");
+        metainf.mkdir();
+        filelist.add(new File(root, "META-INF"));
 
-        String title="taitoru";
-        String author="sakusha";
-        String publisher="shuppansha";
-
-        File current=new File(".");
-        File folder=new File(current,"newfolder");
+        File folder = new File(root, "OEBPS");
         folder.mkdir();
-        File styles=new File(folder,"styles");
+        filelist.add(new File(root, "OEBPS"));
+        File styles = new File(folder, "styles");
         styles.mkdir();
-        File images=new File(folder,"images");
+        File images = new File(folder, "images");
         images.mkdir();
-        File text=new File(folder,"text");
+        File text = new File(folder, "text");
         text.mkdir();
-        File target=new File(current,foldername);
-        File[] imagefiles=target.listFiles();
+        File target = new File(current, foldername);
+        File[] imagefiles = target.listFiles();
         BufferedImage img = null;
 
         try {
@@ -39,39 +53,153 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }//
-        int width=img.getWidth();
-        int height=img.getHeight();
-        Filemaker fm=new Filemaker(title,title,author,author,publisher,width,height,type);
+        int width = img.getWidth();
+        int height = img.getHeight();
+        Filemaker fm = new Filemaker(title, title, author, author, publisher, width, height, type);
         try {
-            for(int i=0;i<imagefiles.length;i++){
-                String name=fm.getName(i);
-                String extension = "";
-                String imagefilename=imagefiles[i].getName();
-                extension=imagefilename.substring(imagefilename.lastIndexOf("."));
-                File newimage=new File(images,
-                        "image-"+name+extension);
-                Files.copy(imagefiles[i].toPath(),newimage.toPath());
+            FileWriter containerfw = new FileWriter(new File(metainf, "container.xml"));
+            containerfw.write(fm.getContainer());
+            containerfw.close();
+            //filelist.add(new File(metainf, "container.xml"));
+/*
+            FileWriter mimetypefw = new FileWriter(new File(root, "mimetype"));
+            mimetypefw.write("application/epub+zip");
+            mimetypefw.close();
+            filelist.add(new File(root, "mimetype"));
+*/
+            String extension = "";
+            for (int i = 0; i < imagefiles.length; i++) {
+                String name = fm.getName(i);
 
-                FileWriter xhtmlfw=new FileWriter(new File(text,"b_"+name+".xhtml"));
+                String imagefilename = imagefiles[i].getName();
+                extension = imagefilename.substring(imagefilename.lastIndexOf("."));
+                File newimage = new File(images,
+                        "image-" + name + extension);
+                Files.copy(imagefiles[i].toPath(), newimage.toPath());
+
+                FileWriter xhtmlfw = new FileWriter(new File(text, "b_" + name + ".xhtml"));
 
 
-                xhtmlfw.write(fm.getxhtmls(title,newimage.getName(),width,height,i));
+                xhtmlfw.write(fm.getxhtmls(i, extension));
                 xhtmlfw.close();
-
+                //filelist.add(new File(text, "b_" + name + ".xhtml"));
             }
 
-            FileWriter fixedfw=new FileWriter(new File(styles,"fixed.css"));
+            FileWriter fixedfw = new FileWriter(new File(styles, "fixed.css"));
             fixedfw.write(fm.getFixed());
             fixedfw.close();
-            FileWriter tocxhtmlfw=new FileWriter(new File(folder,"toc.xhtml"));
+            //filelist.add(new File(styles, "fixed.css"));
+
+            FileWriter tocxhtmlfw = new FileWriter(new File(folder, "toc.xhtml"));
             tocxhtmlfw.write(fm.getTocxhtml());
             tocxhtmlfw.close();
-            FileWriter tocncxfw=new FileWriter(new File(folder,"toc.ncx"));
+            // filelist.add(new File(folder, "toc.xhtml"));
+
+            FileWriter tocncxfw = new FileWriter(new File(folder, "toc.ncx"));
             tocncxfw.write(fm.getTocncx());
             tocncxfw.close();
+            //filelist.add(new File(folder, "toc.ncx"));
+
+            FileWriter standardfw = new FileWriter(new File(folder, "standard.opf"));
+            standardfw.write(fm.getStandard(imagefiles.length, extension));
+            standardfw.close();
+            //filelist.add(new File(folder, "standard.opf"));
+
+            String timestamp = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
+            File file = new File("./" + title + "_" + timestamp + ".epub");    //作成するzipファイルの名前
+            File[] files = root.listFiles();    //圧縮対象を相対パスで指定
+            ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(file));
+            try {
+                encode(zos, files);
+                zos.setMethod(ZipOutputStream.STORED); //デフォルトはDEFLATED
+
+                //1つめのファイルを格納
+                ZipEntry entry = new ZipEntry("mimetype");    //格納ファイル名
+                byte[] data = "application/epub+zip".getBytes();    //格納データ
+
+                entry.setSize(data.length);    //データサイズをセット
+
+                CRC32 crc = new CRC32();
+                crc.update(data);
+                entry.setCrc(crc.getValue());    //CRCをセット
+
+                zos.putNextEntry(entry);
+                zos.write(data);
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                zos.close();
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
+
+        } finally {
+            delete(root);
+        }
+    }
+
+    private static void delete(File f) {
+        /*
+         * ファイルまたはディレクトリが存在しない場合は何もしない
+         */
+        if (f.exists() == false) {
+            return;
         }
 
+        if (f.isFile()) {
+            /*
+             * ファイルの場合は削除する
+             */
+            f.delete();
+
+        } else if (f.isDirectory()) {
+            /*
+             * ディレクトリの場合は、すべてのファイルを削除する
+             */
+
+            /*
+             * 対象ディレクトリ内のファイルおよびディレクトリの一覧を取得
+             */
+            File[] files = f.listFiles();
+
+            /*
+             * ファイルおよびディレクトリをすべて削除
+             */
+            for (int i = 0; i < files.length; i++) {
+                /*
+                 * 自身をコールし、再帰的に削除する
+                 */
+                delete(files[i]);
+            }
+            /*
+             * 自ディレクトリを削除する
+             */
+            f.delete();
+        }
     }
+
+
+    static void encode(ZipOutputStream zos, File[] files) throws Exception {
+        for (File f : files) {
+            if (f.isDirectory()) {
+                encode(zos, f.listFiles());
+            } else {
+                String path = f.getPath();
+                path = path.replace('\\', '/');
+                //System.out.println(path);
+                path = path.substring(path.indexOf('/', 3) + 1, path.length());
+                ZipEntry entry = new ZipEntry(path);
+                zos.putNextEntry(entry);
+                try (InputStream is = new BufferedInputStream(new FileInputStream(f))) {
+                    for (; ; ) {
+                        int len = is.read(buf);
+                        if (len < 0) break;
+                        zos.write(buf, 0, len);
+                    }
+                }
+            }
+        }
+    }
+
 }
