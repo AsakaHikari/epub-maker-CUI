@@ -130,14 +130,16 @@ public class Filemaker {
 
     public String getOffset(int page,int type){
         String offset="center";
-        if(page>0) {
-            switch (type) {
-                case 0:
-                    offset = page%2==0 ? "left":"right";
-                    break;
-                case 1:
-                    offset = page%2==1 ? "left":"right";
-                    break;
+        if(type!=2) {
+            if (page > 0) {
+                switch (type) {
+                    case 0:
+                        offset = page % 2 == 0 ? "left" : "right";
+                        break;
+                    case 1:
+                        offset = page % 2 == 1 ? "left" : "right";
+                        break;
+                }
             }
         }
         return offset;
@@ -147,7 +149,8 @@ public class Filemaker {
         Calendar calendar= Calendar.getInstance();
         String date=""+calendar.get(Calendar.YEAR)+"-"+String.format("%02d",calendar.get(Calendar.MONTH)+1)+"-"+calendar.get(Calendar.DAY_OF_MONTH)
                 +"T"+calendar.get(Calendar.HOUR_OF_DAY)+":"+calendar.get(Calendar.MINUTE)+":"+calendar.get(Calendar.SECOND)+"Z";
-
+        String layout = type==0?"rl":"lr";
+        String direction = type==0?"rtl":"ltr";
         StringBuffer str=new StringBuffer
                 ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                 "<package xmlns=\"http://www.idpf.org/2007/opf\" version=\"3.0\" xml:lang=\"ja\" unique-identifier=\"pub-id\" prefix=\"rendition: http://www.idpf.org/vocab/rendition/#\">\n" +
@@ -180,7 +183,7 @@ public class Filemaker {
                 "<meta name=\"orientation-lock\" content=\"none\" />\n" +
                 "<meta name=\"original-resolution\" content=\"1045x1500\" />\n" +
                 "<meta name=\"book-type\" content=\"comic\" />\n" +
-                "<meta name=\"primary-writing-mode\" content=\"horizontal-rl\" />\n" +
+                "<meta name=\"primary-writing-mode\" content=\"horizontal-"+layout+"\" />\n" +
                 "<meta name=\"SpineColor\" content=\"#ffffff\" />\n" +
                 "\n" +
                 "<!-- etc. -->\n" +
@@ -209,7 +212,7 @@ public class Filemaker {
         str.append("\n" +
                 "</manifest>\n" +
                 "\n" +
-                "<spine page-progression-direction=\"rtl\" toc=\"ncx\">\n");
+                "<spine page-progression-direction=\""+direction+"\" toc=\"ncx\">\n");
         for(int i=0;i<pages;i++){
             String offset="rendition:page-spread-center";
             switch(getOffset(i,type)){
