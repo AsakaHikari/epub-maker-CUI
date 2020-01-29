@@ -27,7 +27,7 @@ public class Filemaker {
     }
 
     public String getFixed() {
-        return "@charset \"UTF-8\";\n" +
+        return "@charset \"utf-8\";\n" +
                 "\n" +
                 "html,\n" +
                 "body {\n" +
@@ -74,7 +74,7 @@ public class Filemaker {
 
     public String getTocncx(){
         uuid=UUID.randomUUID().toString();
-        return "<?xml version='1.0' encoding='UTF-8'?>\n" +
+        return "<?xml version='1.0' encoding='utf-8'?>\n" +
                 "<ncx xmlns=\"http://www.daisy.org/z3986/2005/ncx/\" version=\"2005-1\">\n" +
                 "\t<head>\n" +
                 "\t\t<meta name=\"dtb:uid\" content=\"urn:uuid:"+uuid+"\" />\n" +
@@ -102,7 +102,7 @@ public class Filemaker {
     public String getxhtmls(int page,String extension){
         String name=getName(page);
         String offset=getOffset(page,type)+"page";
-        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+        return "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
                 "<!DOCTYPE html>\n" +
                 "<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:epub=\"http://www.idpf.org/2007/ops\" xml:lang=\"ja\">\n" +
                 "<head>\n" +
@@ -149,10 +149,22 @@ public class Filemaker {
         Calendar calendar= Calendar.getInstance();
         String date=""+calendar.get(Calendar.YEAR)+"-"+String.format("%02d",calendar.get(Calendar.MONTH)+1)+"-"+calendar.get(Calendar.DAY_OF_MONTH)
                 +"T"+calendar.get(Calendar.HOUR_OF_DAY)+":"+calendar.get(Calendar.MINUTE)+":"+calendar.get(Calendar.SECOND)+"Z";
-        String layout = type==0?"rl":"lr";
-        String direction = type==0?"rtl":"ltr";
+        String layout="";
+        String direction="";
+        switch(type){
+            case 0:
+            case 2:
+                layout="rl";
+                direction="rtl";
+                break;
+            case 1:
+            case 3:
+                layout="lr";
+                direction="ltr";
+                break;
+        }
         StringBuffer str=new StringBuffer
-                ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                ("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
                 "<package xmlns=\"http://www.idpf.org/2007/opf\" version=\"3.0\" xml:lang=\"ja\" unique-identifier=\"pub-id\" prefix=\"rendition: http://www.idpf.org/vocab/rendition/#\">\n" +
                 "<metadata xmlns:dc=\"http://purl.org/dc/elements/1.1/\">\n" +
                 "<!-- TITLE -->\n" +
