@@ -12,9 +12,7 @@ import java.util.*;
 
 import javax.swing.*;
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -32,6 +30,7 @@ public class Main {
     private JRadioButton radio2;
     private JRadioButton radio3;
     private JRadioButton radio4;
+    private JCheckBox check1;
     private JLabel label;
     private JPanel labelP;
 
@@ -144,7 +143,7 @@ public class Main {
      */
     private void initialize() {
         frame = new JFrame();
-        frame.setBounds(100, 100, 450, 300);
+        frame.setBounds(100, 100, 600, 500);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setTitle("epub maker CUI");
 
@@ -161,11 +160,11 @@ public class Main {
         textArea.setTransferHandler(new DropFileHandler());
 
         JPanel p = new JPanel();
-        p.setMaximumSize(new Dimension(Short.MAX_VALUE, Short.MAX_VALUE));
         radio1 = new JRadioButton("右->左見開き");
         radio2 = new JRadioButton("左->右見開き");
         radio3 = new JRadioButton("中央(左めくり)");
         radio4 = new JRadioButton("中央(右めくり)");
+        check1=new JCheckBox("表紙を中央にする");
         label =new JLabel("上にファイルを追加");
 
         ButtonGroup group = new ButtonGroup();
@@ -178,6 +177,10 @@ public class Main {
         p.add(radio2);
         p.add(radio3);
         p.add(radio4);
+        p.add(check1);
+
+        radio1.setSelected(true);
+        check1.setSelected(true);
 
         labelP= new JPanel();
         labelP.add(label);
@@ -342,6 +345,7 @@ public class Main {
                 }else if(radio4.isSelected()){
                     type=3;
                 }
+                boolean isChecked=check1.isSelected();
                 /*
                 for(String arg:args){
                     if(arg.contains("-type=")){
@@ -408,19 +412,18 @@ public class Main {
                     File[] imagefiles = target.listFiles();
                     BufferedImage img = null;
 
-                    try {
-                        img = ImageIO.read(imagefiles[0]);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }//
-                    int width = img.getWidth();
-                    int height = img.getHeight();
-                    Filemaker fm = new Filemaker(title, title, author, author, publisher, width, height, type);
+
+                    int[] widths=new int[imagefiles.length];
+                    int[] heights=new int[imagefiles.length];
+                    Filemaker fm = new Filemaker(title, title, author, author, publisher, widths, heights, type, isChecked);
                     try {
                         write(new File(metainf, "container.xml"), fm.getContainer());
 
                         String extension = "";
                         for (int i = 0; i < imagefiles.length; i++) {
+                            img = ImageIO.read(imagefiles[0]);
+                            widths[i]=img.getWidth();
+                            heights[i]=img.getHeight();
                             String name = fm.getName(i);
 
                             String imagefilename = imagefiles[i].getName();

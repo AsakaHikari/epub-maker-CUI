@@ -10,20 +10,22 @@ public class Filemaker {
     private final String author;
     private final String authorread;
     private final String publisher;
-    private final int width;
-    private final int height;
+    private final int[] widths;
+    private final int[] heights;
     private String uuid;
+    private final boolean checked;
 
-    public Filemaker(String title,String titleread,String author,String authorread,String publisher,int width,int height,int type){
+    public Filemaker(String title, String titleread, String author, String authorread, String publisher, int[] width, int[] height, int type, boolean checked){
 
         this.title = title;
         this.titleread = titleread;
         this.author = author;
         this.authorread = authorread;
         this.publisher = publisher;
-        this.width = width;
-        this.height = height;
+        this.widths = width;
+        this.heights = height;
         this.type = type;
+        this.checked = checked;
     }
 
     public String getFixed() {
@@ -101,7 +103,7 @@ public class Filemaker {
 
     public String getxhtmls(int page,String extension){
         String name=getName(page);
-        String offset=getOffset(page,type)+"page";
+        String offset=getOffset(page,type,checked)+"page";
         return "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
                 "<!DOCTYPE html>\n" +
                 "<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:epub=\"http://www.idpf.org/2007/ops\" xml:lang=\"ja\">\n" +
@@ -109,14 +111,14 @@ public class Filemaker {
                 "<meta charset=\"UTF-8\"/>\n" +
                 "<title>"+title+"</title>\n" +
                 "<link rel=\"stylesheet\" type=\"text/css\" href=\"../styles/fixed.css\"/>\n" +
-                "<meta name=\"viewport\" content=\"width="+width+", height="+height+"\"/>\n" +
+                "<meta name=\"viewport\" content=\"width="+widths[page]+", height="+heights[page]+"\"/>\n" +
                 "</head>\n" +
                 "<body>\n" +
                 "<div id=\"top\">\n" +
                 "<svg class=\""+offset+"\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\"\n" +
                 " xmlns:xlink=\"http://www.w3.org/1999/xlink\"\n" +
-                " width=\"100%\" height=\"100%\" viewBox=\"0 0 "+width+" "+height+"\">\n" +
-                "<image width=\""+width+"\" height=\""+height+"\" xlink:href=\"../images/image-"+name+extension+"\"/>\n" +
+                " width=\"100%\" height=\"100%\" viewBox=\"0 0 "+widths[page]+" "+heights[page]+"\">\n" +
+                "<image width=\""+widths[page]+"\" height=\""+heights[page]+"\" xlink:href=\"../images/image-"+name+extension+"\"/>\n" +
                 "</svg>\n" +
                 "</div>\n" +
                 "</body>\n" +
@@ -128,15 +130,26 @@ public class Filemaker {
         return String.format("%04d",page);
     }
 
-    public String getOffset(int page,int type){
+    public String getOffset(int page,int type,boolean checked){
         String offset="center";
-        if(type!=2) {
+        if(type<=1) {
+            if(checked){
             if (page > 0) {
                 switch (type) {
                     case 0:
                         offset = page % 2 == 0 ? "left" : "right";
                         break;
                     case 1:
+                        offset = page % 2 == 1 ? "left" : "right";
+                        break;
+                }
+            }
+            }else{
+                switch (type) {
+                    case 1:
+                        offset = page % 2 == 0 ? "left" : "right";
+                        break;
+                    case 0:
                         offset = page % 2 == 1 ? "left" : "right";
                         break;
                 }
@@ -227,7 +240,7 @@ public class Filemaker {
                 "<spine page-progression-direction=\""+direction+"\" toc=\"ncx\">\n");
         for(int i=0;i<pages;i++){
             String offset="rendition:page-spread-center";
-            switch(getOffset(i,type)){
+            switch(getOffset(i,type,checked)){
                 case "right":
                     offset="page-spread-right";
                     break;
