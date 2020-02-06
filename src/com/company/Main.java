@@ -419,7 +419,7 @@ public class Main {
                         String imagefilename = image.getName();
                         String extension = imagefilename.substring(imagefilename.lastIndexOf(".")+1);
                         boolean flag=false;
-                        System.out.println(extension);
+                        //System.out.println(extension);
                         for(String format:formatNames){
                             if(format.equals(extension)){
                                 flag=true;
