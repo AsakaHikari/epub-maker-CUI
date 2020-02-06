@@ -12,10 +12,11 @@ public class Filemaker {
     private final String publisher;
     private final int[] widths;
     private final int[] heights;
+    private final String[] extensions;
     private String uuid;
     private final boolean checked;
 
-    public Filemaker(String title, String titleread, String author, String authorread, String publisher, int[] width, int[] height, int type, boolean checked){
+    public Filemaker(String title, String titleread, String author, String authorread, String publisher, int[] width, int[] height, int type, String[] extensions, boolean checked){
 
         this.title = title;
         this.titleread = titleread;
@@ -25,6 +26,7 @@ public class Filemaker {
         this.widths = width;
         this.heights = height;
         this.type = type;
+        this.extensions = extensions;
         this.checked = checked;
     }
 
@@ -158,7 +160,7 @@ public class Filemaker {
         return offset;
     }
 
-    public String getStandard(int pages,String extension){
+    public String getStandard(int pages){
         Calendar calendar= Calendar.getInstance();
         String date=""+calendar.get(Calendar.YEAR)+"-"+String.format("%02d",calendar.get(Calendar.MONTH)+1)+"-"+calendar.get(Calendar.DAY_OF_MONTH)
                 +"T"+calendar.get(Calendar.HOUR_OF_DAY)+":"+calendar.get(Calendar.MINUTE)+":"+calendar.get(Calendar.SECOND)+"Z";
@@ -227,7 +229,7 @@ public class Filemaker {
                 "<!-- image -->\n" +
                 "<item id=\"cover\" href=\"images/image-0000.jpg\" properties=\"cover-image\" media-type=\"image/jpeg\" />\n");
         for(int i=1;i<pages;i++){
-            str.append("<item id=\"image-"+getName(i)+"\" href=\"images/image-"+getName(i)+extension+"\" media-type=\"image/jpeg\" />\n");
+            str.append("<item id=\"image-"+getName(i)+"\" href=\"images/image-"+getName(i)+extensions[i]+"\" media-type=\"image/jpeg\" />\n");
         }
         str.append("\n" +
                 "<!-- xhtml -->\n");

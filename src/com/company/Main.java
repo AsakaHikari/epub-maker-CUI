@@ -33,6 +33,7 @@ public class Main {
     private JCheckBox check1;
     private JLabel label;
     private JPanel labelP;
+    private List<String> supportedExtensions=new ArrayList<String>();
 
     public static void main(String[] args) throws UnsupportedEncodingException {
 
@@ -292,7 +293,6 @@ public class Main {
         }
 
 
-
     }
 
     /**
@@ -409,28 +409,50 @@ public class Main {
                     images.mkdir();
                     File text = new File(folder, "text");
                     text.mkdir();
-                    File[] imagefiles = target.listFiles();
+                    File[] imagefiles_ = target.listFiles();
+                    List<File> imagefiles=new ArrayList<File>();
+
+                    String[] formatNames=ImageIO.getWriterFormatNames();
+
+                    //画像ファイルのみをimagefilesに入れる
+                    for(File image:imagefiles_){
+                        String imagefilename = image.getName();
+                        String extension = imagefilename.substring(imagefilename.lastIndexOf(".")+1);
+                        boolean flag=false;
+                        System.out.println(extension);
+                        for(String format:formatNames){
+                            if(format.equals(extension)){
+                                flag=true;
+                                break;
+                            }
+                        }
+                        if(flag){
+                            imagefiles.add(image);
+                        }
+                    }
                     BufferedImage img = null;
 
 
-                    int[] widths=new int[imagefiles.length];
-                    int[] heights=new int[imagefiles.length];
-                    Filemaker fm = new Filemaker(title, title, author, author, publisher, widths, heights, type, isChecked);
+                    int[] widths=new int[imagefiles.size()];
+                    int[] heights=new int[imagefiles.size()];
+                    String[] extensions=new String[imagefiles.size()];
+                    Filemaker fm = new Filemaker(title, title, author, author, publisher, widths, heights, type, extensions, isChecked);
                     try {
                         write(new File(metainf, "container.xml"), fm.getContainer());
 
                         String extension = "";
-                        for (int i = 0; i < imagefiles.length; i++) {
-                            img = ImageIO.read(imagefiles[0]);
+                        for (int i = 0; i < imagefiles.size(); i++) {
+                            img = ImageIO.read(imagefiles.get(i));
                             widths[i]=img.getWidth();
                             heights[i]=img.getHeight();
                             String name = fm.getName(i);
 
-                            String imagefilename = imagefiles[i].getName();
+                            String imagefilename = imagefiles.get(i).getName();
                             extension = imagefilename.substring(imagefilename.lastIndexOf("."));
+                            extensions[i]=extension;
                             File newimage = new File(images,
                                     "image-" + name + extension);
-                            Files.copy(imagefiles[i].toPath(), newimage.toPath());
+                            Files.copy(imagefiles.get(i).toPath(), newimage.toPath());
 
 
                             write(new File(text, "b_" + name + ".xhtml"), fm.getxhtmls(i, extension));
@@ -444,7 +466,7 @@ public class Main {
 
                         write(new File(folder, "toc.ncx"), fm.getTocncx());
 
-                        write(new File(folder, "standard.opf"), fm.getStandard(imagefiles.length, extension));
+                        write(new File(folder, "standard.opf"), fm.getStandard(imagefiles.size()));
 
 
                         String timestamp = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
