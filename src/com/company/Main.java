@@ -21,6 +21,9 @@ import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
+
 public class Main {
     static byte[] buf = new byte[1024];
     private JFrame frame;
@@ -360,8 +363,18 @@ public class Main {
                     //System.out.println(target);
                     //System.out.println(current);
                     //if(true)continue;
-                    if (!target.isDirectory()) continue;
+                    boolean isPDF=false;
                     String foldername = target.getName();
+                    if (!target.isDirectory()){
+
+                        if(foldername.substring(foldername.lastIndexOf(".")+1).toLowerCase().equals("pdf")){
+                            isPDF=true;
+
+                        }else{
+                            continue;
+                        }
+                    }
+
 
 
                     String title = "unknown";
@@ -409,50 +422,77 @@ public class Main {
                     images.mkdir();
                     File text = new File(folder, "text");
                     text.mkdir();
-                    File[] imagefiles_ = target.listFiles();
-                    List<File> imagefiles=new ArrayList<File>();
 
                     String[] formatNames=ImageIO.getWriterFormatNames();
+                    BufferedImage[] imgs;
+                    if(isPDF){
+                        //Loading an existing PDF document
+                        File file = target;
+                        PDDocument document = PDDocument.load(file);
 
-                    //画像ファイルのみをimagefilesに入れる
-                    for(File image:imagefiles_){
-                        String imagefilename = image.getName();
-                        String extension = imagefilename.substring(imagefilename.lastIndexOf(".")+1);
-                        boolean flag=false;
-                        //System.out.println(extension);
-                        for(String format:formatNames){
-                            if(format.equals(extension)){
-                                flag=true;
-                                break;
+                        imgs=new BufferedImage[document.getNumberOfPages()];
+
+                        //Instantiating the PDFRenderer class
+                        PDFRenderer renderer = new PDFRenderer(document);
+
+                        //Rendering an image from the PDF document
+                        for(int i=0;i<imgs.length;i++) {
+                            imgs[i]= renderer.renderImage(i);
+                        }
+
+
+                        //Closing the document
+                        document.close();
+                    }else {
+
+                        File[] imagefiles_ = target.listFiles();
+                        List<File> imagefiles=new ArrayList<File>();
+                        //画像ファイルのみをimagefilesに入れる
+                        for(File image:imagefiles_){
+                            String imagefilename = image.getName();
+                            String extension = imagefilename.substring(imagefilename.lastIndexOf(".")+1);
+                            boolean flag=false;
+                            //System.out.println(extension);
+                            for(String format:formatNames){
+                                if(format.equals(extension)){
+                                    flag=true;
+                                    break;
+                                }
+                            }
+                            if(flag){
+                                imagefiles.add(image);
                             }
                         }
-                        if(flag){
-                            imagefiles.add(image);
+                        imgs = new BufferedImage[imagefiles.size()];
+                        for (int i = 0; i < imagefiles.size(); i++) {
+                            imgs[i] = ImageIO.read(imagefiles.get(i));
                         }
+
                     }
-                    BufferedImage img = null;
 
 
-                    int[] widths=new int[imagefiles.size()];
-                    int[] heights=new int[imagefiles.size()];
-                    String[] extensions=new String[imagefiles.size()];
+
+
+                    int[] widths=new int[imgs.length];
+                    int[] heights=new int[imgs.length];
+                    String[] extensions=new String[imgs.length];
+
                     Filemaker fm = new Filemaker(title, title, author, author, publisher, widths, heights, type, extensions, isChecked);
                     try {
                         write(new File(metainf, "container.xml"), fm.getContainer());
 
                         String extension = "";
-                        for (int i = 0; i < imagefiles.size(); i++) {
-                            img = ImageIO.read(imagefiles.get(i));
-                            widths[i]=img.getWidth();
-                            heights[i]=img.getHeight();
+                        for (int i = 0; i < imgs.length; i++) {
+                            widths[i]=imgs[i].getWidth();
+                            heights[i]=imgs[i].getHeight();
                             String name = fm.getName(i);
 
-                            String imagefilename = imagefiles.get(i).getName();
-                            extension = imagefilename.substring(imagefilename.lastIndexOf("."));
+
+                            extension = ".jpg";
                             extensions[i]=extension;
                             File newimage = new File(images,
                                     "image-" + name + extension);
-                            Files.copy(imagefiles.get(i).toPath(), newimage.toPath());
+                            ImageIO.write(imgs[i], "JPEG",newimage);
 
 
                             write(new File(text, "b_" + name + ".xhtml"), fm.getxhtmls(i, extension));
@@ -466,7 +506,7 @@ public class Main {
 
                         write(new File(folder, "toc.ncx"), fm.getTocncx());
 
-                        write(new File(folder, "standard.opf"), fm.getStandard(imagefiles.size()));
+                        write(new File(folder, "standard.opf"), fm.getStandard(imgs.length));
 
 
                         String timestamp = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
